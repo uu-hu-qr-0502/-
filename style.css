@@ -202,3 +202,104 @@ body.language-en .uu-talk-card h3{font-family:"Times New Roman",Times,serif}
     margin-right:6px;
   }
 }
+
+/* ===== 每日问答 + 写下心事：小小淡粉色删除按钮 ===== */
+
+/* 每日问答里的「删除我的」 */
+[data-weekly-reply-delete] {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+
+  margin-left: 8px !important;
+  margin-top: 5px !important;
+
+  padding: 3px 9px !important;
+
+  border: 1px solid rgba(201,130,148,.28) !important;
+  border-radius: 999px !important;
+
+  background: rgba(243,201,211,.16) !important;
+  color: var(--pink-deep) !important;
+
+  font-family: inherit !important;
+  font-size: .68rem !important;
+  line-height: 1.3 !important;
+  font-weight: 400 !important;
+
+  cursor: pointer;
+  box-shadow: none !important;
+
+  transition:
+    background .2s ease,
+    border-color .2s ease,
+    transform .2s ease,
+    opacity .2s ease;
+}
+
+/* 每日问答删除按钮悬停 */
+[data-weekly-reply-delete]:hover {
+  background: rgba(243,201,211,.34) !important;
+  border-color: rgba(201,130,148,.5) !important;
+  color: var(--pink-deep) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 每日问答删除按钮点击 */
+[data-weekly-reply-delete]:active {
+  transform: translateY(0) !important;
+}
+
+/* 写下心事里的「删除我的」 */
+.guest-note .delete-my-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+
+  margin-left: 8px !important;
+  margin-top: 5px !important;
+
+  padding: 3px 9px !important;
+
+  border: 1px solid rgba(201,130,148,.28) !important;
+  border-radius: 999px !important;
+
+  background: rgba(243,201,211,.16) !important;
+  color: var(--pink-deep) !important;
+
+  font-family: inherit !important;
+  font-size: .68rem !important;
+  line-height: 1.3 !important;
+  font-weight: 400 !important;
+
+  cursor: pointer;
+  box-shadow: none !important;
+
+  transition:
+    background .2s ease,
+    border-color .2s ease,
+    transform .2s ease,
+    opacity .2s ease;
+}
+
+.guest-note .delete-my-button:hover {
+  background: rgba(243,201,211,.34) !important;
+  border-color: rgba(201,130,148,.5) !important;
+  color: var(--pink-deep) !important;
+  transform: translateY(-1px) !important;
+}
+
+.guest-note .delete-my-button:active {
+  transform: translateY(0) !important;
+}
+
+/* 手机上稍微紧凑一点 */
+@media(max-width:700px) {
+  [data-weekly-reply-delete],
+  .guest-note .delete-my-button {
+    margin-left: 0 !important;
+    margin-right: 5px !important;
+    padding: 3px 8px !important;
+    font-size: .66rem !important;
+  }
+}

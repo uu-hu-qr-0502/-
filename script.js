@@ -14,28 +14,7 @@ const weeklyQuestionDefault = {
   placeholderEn: "Maybe: a very soft mint green…"
 };
 
-const baseArtworks = [
-  {
-    type:"series",
-    category:"colored",
-    date:"2026-09-21",
-    title:"示例：我的第一组画",
-    note:"把属于同一个故事的几幅画放在这里。",
-    images:[
-      {image:"images/series-01.jpg",title:"第一张"},
-      {image:"images/series-02.jpg",title:"第二张"},
-      {image:"images/series-03.jpg",title:"第三张"}
-    ]
-  },
-  {
-    type:"single",
-    category:"sketch",
-    date:"2026-09-20",
-    title:"随手画的小鸟",
-    image:"images/sketch-01.jpg",
-    note:"一个很普通的下午，突然想画一只鸟。"
-  }
-];
+const baseArtworks = [];
 
 const translations = {
   zh: {
@@ -1769,27 +1748,24 @@ async function initEvents(){
 
         if(!files.length)return;
 
-        selectedSubmissionImage=
-          files;
+        selectedSubmissionImage = files;
 
-        $("share-image-preview")
-          .innerHTML=
-            files
-              .map(
-                (f,i)=>`
-                  <div class="upload-thumb">
-                    <img
-                      src="${URL.createObjectURL(f)}"
-                      alt="preview ${i+1}"
-                    >
-                  </div>
-                `
-              )
-              .join("");
-
-        $("share-image-preview")
-          .classList
-          .remove("hidden");
+        const preview = $("share-image-preview");
+        if(preview){
+          preview.innerHTML = files
+            .map(
+              (f,i)=>`
+                <div class="upload-thumb">
+                  <img
+                    src="${URL.createObjectURL(f)}"
+                    alt="preview ${i+1}"
+                  >
+                </div>
+              `
+            )
+            .join("");
+          preview.classList.remove("hidden");
+        }
 
       }
     );
@@ -1881,11 +1857,13 @@ async function initEvents(){
           $("share-note").value="";
           $("share-image").value="";
 
-          selectedSubmissionImage=null;
+          selectedSubmissionImage = null;
 
-          $("share-image-preview")
-            .classList
-            .add("hidden");
+          const preview = $("share-image-preview");
+          if(preview){
+            preview.innerHTML = "";
+            preview.classList.add("hidden");
+          }
 
         }catch(err){
 

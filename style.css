@@ -146,3 +146,59 @@ body.language-en .uu-talk-card h3{font-family:"Times New Roman",Times,serif}
 #admin-passkey{display:block;margin:8px auto 0}
 
 .weekly-answer-history{margin-top:18px;display:grid;gap:8px}.weekly-answer-item{padding:10px 12px;border-radius:12px;background:#f7faf9;font-size:.92rem}.weekly-answer-item span{font-weight:600}.weekly-answer-item p{margin:4px 0 0;line-height:1.6}
+
+
+
+
+/* ===== uuçš„å°é¦† Â· è‡ªå·±çš„ç•™è¨€/æŠ•ç¨¿åˆ é™¤æŒ‰é’® ===== */
+.guest-note .delete-my-button,
+.community-info .delete-my-button {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin-left:10px;
+  margin-top:8px;
+  padding:4px 10px;
+  border:1px solid rgba(201,130,148,.38);
+  border-radius:999px;
+  background:rgba(243,201,211,.16);
+  color:var(--pink-deep);
+  font:inherit;
+  font-size:.72rem;
+  line-height:1.4;
+  cursor:pointer;
+  transition:background .2s ease,border-color .2s ease,transform .2s ease,opacity .2s ease;
+}
+
+.guest-note .delete-my-button:hover,
+.community-info .delete-my-button:hover {
+  background:rgba(243,201,211,.38);
+  border-color:rgba(201,130,148,.65);
+  transform:translateY(-1px);
+}
+
+.guest-note .delete-my-button:active,
+.community-info .delete-my-button:active {
+  transform:translateY(0);
+}
+
+.guest-note .delete-my-button:disabled,
+.community-info .delete-my-button:disabled {
+  opacity:.55;
+  cursor:wait;
+  transform:none;
+}
+
+/* å’Œå›žå¤æŒ‰é’®ä¿æŒåŒä¸€è¡Œæ—¶ï¼Œä»ç„¶ä¿æŒè½»å·§ */
+.guest-note .reply-button + .delete-my-button {
+  margin-left:8px;
+}
+
+/* æ‰‹æœºä¸Šä¸è¦æŒ¤åœ¨ä¸€èµ· */
+@media(max-width:700px){
+  .guest-note .delete-my-button,
+  .community-info .delete-my-button {
+    margin-left:0;
+    margin-right:6px;
+  }
+}

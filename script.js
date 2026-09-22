@@ -702,39 +702,68 @@ async function loadRemoteArtworks(){
       .from("artwork")
       .select("*")
       .eq("is_approved",true)
-      .order(
-        "created_at",
-        {ascending:false}
-      );
+      .order("created_at",{ascending:false});
 
   if(error){
-    console.warn(
-      "Supabase artwork read failed",
-      error
-    );
+    console.warn("Supabase artwork read failed",error);
     return;
   }
 
-  remoteArtworks=
-    (data||[]).map(x=>({
+  const rows=data||[];
+  const seriesMap=new Map();
+  const result=[];
+
+  rows.forEach(x=>{
+    const date=(x.created_at||"").slice(0,10)||new Date().toISOString().slice(0,10);
+
+    if(x.series_id){
+      const key=String(x.series_id);
+      if(!seriesMap.has(key)){
+        seriesMap.set(key,{
+          id:key,
+          series_id:key,
+          type:"series",
+          category:x.category||"colored",
+          date,
+          title:x.title||"",
+          note:x.note||"",
+          name:x.name||"",
+          images:[]
+        });
+      }
+      seriesMap.get(key).images.push({
+        id:x.id,
+        image:x.image_url||"",
+        title:x.image_title||"",
+        order:Number(x.series_order)||0
+      });
+      return;
+    }
+
+    result.push({
       id:x.id,
       type:x.type||"single",
       category:x.category||"colored",
-      date:
-        (x.created_at||"").slice(0,10)
-        ||
-        new Date().toISOString().slice(0,10),
+      date,
       title:x.title||"",
       note:x.note||"",
       image:x.image_url||"",
       name:x.name||""
-    }));
+    });
+  });
+
+  seriesMap.forEach(series=>{
+    series.images.sort((a,b)=>a.order-b.order);
+    result.push(series);
+  });
+
+  remoteArtworks=result.sort((a,b)=>
+    String(b.date).localeCompare(String(a.date))
+  );
 
   await loadGuestOwnership();
-
   renderAll();
 }
-
 
 async function loadRemoteInteractions(){
   if(!supabaseClient)return;
@@ -991,36 +1020,42 @@ function setupRealtime(){
 }
 
 
-async function saveRemoteSubmission(
-  file,
-  title,
-  note,
-  name
-){
-  const image_url=
-    await uploadGalleryImage(
-      file,
-      "submissions"
-    );
+async function saveRemoteSubmission(files,title,note,name){
+  const list=imageFiles(files);
+  if(!list.length)throw new Error("没有可上传的图片");
 
-  const {error}=
-    await supabaseClient
-      .from("artwork")
-      .insert({
-        title,
-        image_url,
-        note,
-        name:name||"匿名投稿",
-        category:"community",
-        is_approved:false,
-        is_owner:false,
-        type:"single",
-        owner_token:getGuestToken()
-      });
+  const seriesId=list.length>1 ? crypto.randomUUID() : null;
+  const uploaded=[];
 
-  if(error)throw error;
+  try{
+    for(let i=0;i<list.length;i++){
+      const file=list[i];
+      const image_url=await uploadGalleryImage(file,"submissions");
+      uploaded.push({file,image_url,index:i});
+    }
+
+    const rows=uploaded.map(({file,image_url,index})=>({
+      title,
+      image_url,
+      image_title:file.name.replace(/\.[^.]+$/,""),
+      note,
+      name:name||"匿名投稿",
+      category:"community",
+      is_approved:false,
+      is_owner:false,
+      type:seriesId ? "series" : "single",
+      series_id:seriesId,
+      series_order:seriesId ? index : null,
+      owner_token:getGuestToken()
+    }));
+
+    const {error}=await supabaseClient.from("artwork").insert(rows);
+    if(error)throw error;
+  }catch(err){
+    console.error("批量投稿失败",err);
+    throw err;
+  }
 }
-
 
 async function refreshAuth(){
   if(!supabaseClient){
@@ -1135,6 +1170,7 @@ async function signInAdmin(){
       currentUser=null;
       adminUnlocked=false;
 
+     
       setAdminMessage(
         "这个账号还没有管理员权限。请在 Supabase 的 App Metadata 里确认 role=admin。",
         "error"
@@ -1459,10 +1495,11 @@ function createSingle(x){
     <article class="art-card">
 
       <img
-        class="art-image"
+        class="art-image art-image-auto-size"
         src="${x.image}"
         alt="${escapeHtml(x.title)}"
         loading="lazy"
+        decoding="async"
       >
 
       <div class="art-info">
@@ -1528,10 +1565,11 @@ function createSeries(x){
           <figure>
 
             <img
-              class="art-image"
+              class="art-image art-image-auto-size"
               src="${i.image}"
               alt="${escapeHtml(i.title||x.title)}"
               loading="lazy"
+              decoding="async"
             >
 
             <figcaption>
@@ -1550,74 +1588,35 @@ function createSeries(x){
 
 
 function renderGallery(id,items){
-
   const box=$(id);
-
   if(!box)return;
 
   const years=groupByYear(items);
 
-  const html=
-    Object
-      .entries(years)
-      .map(
-        ([y,months])=>
-          Object
-            .entries(months)
-            .map(
-              ([m,list])=>{
+  const html=Object.entries(years).map(([y,months])=>
+    Object.entries(months).map(([m,list])=>{
+      const cards=list.map(x=>
+        x.type==="series" ? createSeries(x) : createSingle(x)
+      ).join("");
 
-                const cards=
-                  list
-                    .map(
-                      x=>
-                        x.type==="series"
-                        ?
-                        createSeries(x)
-                        :
-                        createSingle(x)
-                    )
-                    .join("");
+      const monthName=new Date(m+"-01T12:00:00").toLocaleDateString(
+        language==="zh" ? "zh-CN" : "en-US",
+        {month:"long"}
+      );
 
-                const monthName=
-                  new Date(
-                    m+"-01T12:00:00"
-                  )
-                  .toLocaleDateString(
-                    language==="zh"
-                    ?
-                    "zh-CN"
-                    :
-                    "en-US",
-                    {
-                      month:"long"
-                    }
-                  );
+      return `
+        <div class="month-block">
+          <h4>${monthName}</h4>
+          <div class="art-grid art-masonry-grid">
+            ${cards}
+          </div>
+        </div>
+      `;
+    }).join("")
+  ).join("");
 
-                return `
-                  <div class="month-block">
-
-                    <h4>${monthName}</h4>
-
-                    <div class="art-grid">
-                      ${cards}
-                    </div>
-
-                  </div>
-                `;
-
-              }
-            )
-            .join("")
-      )
-      .join("");
-
-  box.innerHTML=
-    html
-    ||
-    `<p class="admin-empty">${t("adminEmpty")}</p>`;
+  box.innerHTML=html||`<p class="admin-empty">${t("adminEmpty")}</p>`;
 }
-
 
 function renderCommunityGallery(){
 
@@ -1726,7 +1725,57 @@ function renderAll(){
 }
 
 
+function injectGalleryAdaptiveStyles(){
+  if(document.getElementById("uu-gallery-performance-styles"))return;
+  const style=document.createElement("style");
+  style.id="uu-gallery-performance-styles";
+  style.textContent=`
+    .art-image-auto-size{
+      display:block !important;
+      width:100% !important;
+      height:auto !important;
+      max-height:none !important;
+      aspect-ratio:auto !important;
+      object-fit:contain !important;
+    }
+    .art-masonry-grid{
+      column-count:3;
+      column-gap:22px;
+      display:block !important;
+    }
+    .art-masonry-grid .art-card,
+    .art-masonry-grid .series-card{
+      display:inline-block;
+      width:100%;
+      margin:0 0 22px;
+      break-inside:avoid;
+      page-break-inside:avoid;
+      vertical-align:top;
+    }
+    .series-grid{
+      align-items:start !important;
+    }
+    .series-grid figure{
+      margin:0;
+    }
+    @media(max-width:900px){
+      .art-masonry-grid{column-count:2;}
+    }
+    @media(max-width:600px){
+      .art-masonry-grid{column-count:1;}
+    }
+    .batch-upload-count{
+      margin:8px 0 0;
+      font-size:.78rem;
+      opacity:.72;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 async function initEvents(){
+
+  injectGalleryAdaptiveStyles();
 
   $("share-preview-button")
     ?.addEventListener(
@@ -1763,7 +1812,8 @@ async function initEvents(){
                 </div>
               `
             )
-            .join("");
+            .join("")
+            + `<p class="batch-upload-count">${language==="zh" ? `已选择 ${files.length} 幅` : `${files.length} selected`}</p>`;
           preview.classList.remove("hidden");
         }
 
@@ -1835,14 +1885,12 @@ async function initEvents(){
             );
           }
 
-          for(const file of files){
-            await saveRemoteSubmission(
-              file,
-              title,
-              note,
-              name
-            );
-          }
+          await saveRemoteSubmission(
+            files,
+            title,
+            note,
+            name
+          );
 
           $("share-message")
             .textContent=
@@ -3551,6 +3599,7 @@ async function renderAdminMyArt(){
         class="visually-hidden"
         type="file"
         accept="image/*"
+        multiple
       >
 
       <div
@@ -3690,116 +3739,100 @@ async function renderAdminMyArt(){
     .addEventListener(
       "change",
       e=>{
+        const files=imageFiles(e.target.files);
+        selectedMyArtImage=files;
 
-        selectedMyArtImage=
-          e.target.files?.[0]||
-          null;
+        const preview=$("my-art-preview");
+        if(!preview)return;
 
-        if(selectedMyArtImage){
-
-          $("my-art-preview")
-            .innerHTML=`
-
-              <img
-                src="${URL.createObjectURL(
-                  selectedMyArtImage
-                )}"
-                alt="preview"
-              >
-
-            `;
-
-          $("my-art-preview")
-            .classList
-            .remove("hidden");
-
+        if(!files.length){
+          preview.innerHTML="";
+          preview.classList.add("hidden");
+          return;
         }
 
+        preview.innerHTML=files.map((f,i)=>`
+          <div class="upload-thumb">
+            <img
+              src="${URL.createObjectURL(f)}"
+              alt="preview ${i+1}"
+            >
+          </div>
+        `).join("")+
+        `<p class="batch-upload-count">${language==="zh" ? `已选择 ${files.length} 幅` : `${files.length} selected`}</p>`;
+        preview.classList.remove("hidden");
       }
     );
-
 
   $("add-my-art")
     .addEventListener(
       "click",
       async()=>{
+        const title=$("my-art-title").value.trim();
+        const files=imageFiles(selectedMyArtImage);
 
-        const title=
-          $("my-art-title")
-            .value
-            .trim();
-
-        const f=
-          selectedMyArtImage;
-
-        if(!f){
-
-          $("my-art-message")
-            .textContent=
-              t("adminNeedImage");
-
+        if(!files.length){
+          $("my-art-message").textContent=t("adminNeedImage");
           return;
         }
 
         if(!title){
-
-          $("my-art-message")
-            .textContent=
-              t("adminNeedTitle");
-
+          $("my-art-message").textContent=t("adminNeedTitle");
           return;
         }
 
+        const button=$("add-my-art");
+        button.disabled=true;
+
         try{
+          const seriesId=files.length>1 ? crypto.randomUUID() : null;
+          const rows=[];
 
-          const image=
-            await uploadGalleryImage(
-              f,
-              "owner"
-            );
+          for(let i=0;i<files.length;i++){
+            const file=files[i];
+            const image=await uploadGalleryImage(file,"owner");
+            rows.push({
+              title,
+              image_url:image,
+              image_title:file.name.replace(/\.[^.]+$/, ""),
+              category:$("my-art-category").value,
+              note:$("my-art-note").value.trim(),
+              is_approved:true,
+              is_owner:true,
+              user_id:currentUser.id,
+              type:seriesId ? "series" : "single",
+              series_id:seriesId,
+              series_order:seriesId ? i : null
+            });
+          }
 
-          const {error}=
-            await supabaseClient
-              .from("artwork")
-              .insert({
-                title,
-                image_url:image,
-                category:$("my-art-category").value,
-                note:$("my-art-note").value.trim(),
-                is_approved:true,
-                is_owner:true,
-                user_id:currentUser.id,
-                type:"single"
-              });
-
+          const {error}=await supabaseClient.from("artwork").insert(rows);
           if(error)throw error;
 
-          selectedMyArtImage=null;
+          selectedMyArtImage=[];
+          $("my-art-image").value="";
+          $("my-art-preview").innerHTML="";
+          $("my-art-preview").classList.add("hidden");
 
           await loadRemoteArtworks();
           await renderAdminMyArt();
 
-          $("my-art-message")
-            .textContent=
-              t("adminArtSaved");
+          $("my-art-message").textContent=
+            language==="zh"
+            ? `已经上传 ${files.length} 幅${files.length>1 ? "组画" : "作品"} ♡`
+            : `${files.length} artwork${files.length>1 ? "s" : ""} uploaded ♡`;
 
         }catch(err){
-
           console.error(err);
-
-          $("my-art-message")
-            .textContent=
-              language==="zh"
-              ?
-              "上传没有成功，请检查 Supabase 权限。"
-              :
-              "Upload failed. Please check Supabase permissions.";
-
+          $("my-art-message").textContent=
+            language==="zh"
+            ? "上传没有成功，请检查 Supabase 权限。"
+            : "Upload failed. Please check Supabase permissions.";
+        }finally{
+          button.disabled=false;
         }
-
       }
     );
-
 
   p.onclick=
     async e=>{
@@ -4652,3 +4685,13 @@ function bindAdminDelegates(){
   }
 
 })();
+alter table public.artwork
+  add column if not exists series_id uuid,
+  add column if not exists series_order integer,
+  add column if not exists image_title text;
+
+create index if not exists artwork_series_id_idx
+  on public.artwork(series_id);
+
+create index if not exists artwork_created_at_idx
+  on public.artwork(created_at desc);

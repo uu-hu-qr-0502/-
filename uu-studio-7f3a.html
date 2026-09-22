@@ -3,14 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UU的小馆</title>
-  <meta name="description" content="UU的小馆 · 一个收藏画画、随笔和大家小世界的地方" />
+  <title>UU · 管理后台</title>
+  <meta name="description" content="UU 管理后台" />
+  <meta name="robots" content="noindex,nofollow" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.0"></script>
-  <script src="supabase-config.js?v=3.4.0"></script>
+  <script src="supabase-config.js?v=3.4.1"></script>
+
+  <style>
+    body.admin-page .site-header,
+    body.admin-page footer,
+    body.admin-page main > section:not(#admin) { display:none !important; }
+    body.admin-page { min-height:100vh; }
+    body.admin-page main { min-height:100vh; }
+    body.admin-page .admin-section.admin-standalone { display:block !important; padding-top:70px; }
+    body.admin-page .admin-card { max-width:1100px; margin:0 auto; }
+  </style>
 </head>
 
-<body>
+<body class="admin-page">
 <header class="site-header">
   <a class="logo" href="#home" data-site-title>UU的小馆</a>
   <nav>
@@ -166,6 +177,41 @@
     <p id="uu-talk-empty" class="community-empty" data-i18n="uuTalkEmpty">UU还没有写下新的话，等我慢慢来这里放下吧 ♡</p>
   </section>
 
+
+  <section id="admin" class="admin-section admin-standalone">
+    <div class="section-heading centered">
+      <p class="eyebrow">PRIVATE CORNER</p>
+      <h2 data-i18n="adminTitle">管理员小房间</h2>
+      <p data-i18n="adminDesc">登录后，可以直接修改网站文字、每周问题、我的画，并审核投稿和查看私信。</p>
+    </div>
+    <div class="admin-card">
+      <div id="admin-locked">
+        <span class="card-symbol">♡</span>
+        <h3 data-i18n="adminLockedTitle">UU的管理员入口</h3>
+        <p data-i18n="adminLockedDesc">只有管理员登录后才能打开这个小房间。</p>
+        <input id="admin-email" type="email" autocomplete="username" placeholder="管理员邮箱" />
+        <input id="admin-password" type="password" autocomplete="current-password" data-i18n-placeholder="adminPasswordPlaceholder" placeholder="管理员密码" />
+        <button type="button" id="admin-unlock" data-i18n="adminUnlock">登录管理员</button>
+        <p id="admin-message" class="form-message" aria-live="polite"></p>
+        <p class="small-note" data-i18n="adminLoginHint">这是UU的管理员专用地址。只有管理员账号登录后才能进入后台。</p>
+      </div>
+      <div id="admin-panel" class="hidden">
+        <div class="admin-topline"><div><span class="admin-dot"></span><strong data-i18n="adminPanelTitle">UU的管理后台</strong></div><button type="button" id="admin-lock" class="text-button" data-i18n="adminLock">退出</button></div>
+        <div class="admin-tabs">
+          <button type="button" class="admin-tab active" data-admin-tab="editor" data-i18n="adminText">网站文字</button>
+          <button type="button" class="admin-tab" data-admin-tab="myart" data-i18n="adminMyArt">我的画</button>
+          <button type="button" class="admin-tab" data-admin-tab="submissions" data-i18n="adminSubmissions">投稿审核</button>
+          <button type="button" class="admin-tab" data-admin-tab="messages" data-i18n="adminMessages">私信</button>
+          <button type="button" class="admin-tab" data-admin-tab="talk" data-i18n="adminTalk">UU的话</button>
+        </div>
+        <div id="admin-editor-panel"></div>
+        <div id="admin-myart-panel" class="hidden"></div>
+        <div id="admin-submissions-panel" class="hidden"></div>
+        <div id="admin-messages-panel" class="hidden"></div>
+        <div id="admin-talk-panel" class="hidden"></div>
+      </div>
+    </div>
+  </section>
 
 </main>
 

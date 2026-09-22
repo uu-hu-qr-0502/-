@@ -577,8 +577,9 @@ function escapeHtml(v){
 
 
 function isAdmin(){
-  return !!currentUser&&
-    currentUser.app_metadata?.role==="admin";
+  // 管理员页面本身已经是专用入口。只要 Supabase 登录成功，
+  // 就允许进入后台，不再要求 App Metadata 里的 role=admin。
+  return !!currentUser;
 }
 
 
@@ -1163,23 +1164,9 @@ async function signInAdmin(){
 
     currentUser=data.user;
 
-    if(!isAdmin()){
+    // 登录成功就进入后台，不再检查 role=admin。
 
-      await supabaseClient.auth.signOut();
-
-      currentUser=null;
-      adminUnlocked=false;
-
-     
-      setAdminMessage(
-        "这个账号还没有管理员权限。请在 Supabase 的 App Metadata 里确认 role=admin。",
-        "error"
-      );
-
-      return;
-    }
-
-    adminUnlocked=true;
+       adminUnlocked=true;
 
     setAdminMessage(
       "登录成功 ♡"
@@ -1775,6 +1762,19 @@ function injectGalleryAdaptiveStyles(){
 
 async function initEvents(){
 
+  // 管理员登录优先绑定：即使后面某个普通页面元素出错，
+  // 也不会让管理员按钮失效。
+  const adminUnlockButton=$("admin-unlock");
+  if(adminUnlockButton){
+    adminUnlockButton.onclick=signInAdmin;
+  }
+  const adminPasswordInput=$("admin-password");
+  if(adminPasswordInput){
+    adminPasswordInput.onkeydown=e=>{
+      if(e.key==="Enter")signInAdmin();
+    };
+  }
+
   injectGalleryAdaptiveStyles();
 
   $("share-preview-button")
@@ -2333,7 +2333,8 @@ async function initEvents(){
               language==="zh"
               ?
               "确定要删除这条答案吗？"
-              :
+
+                             :
               "Delete this answer?"
             )
           ){
@@ -2652,23 +2653,6 @@ async function initEvents(){
       }
     );
 
-
-  $("admin-unlock")
-    ?.addEventListener(
-      "click",
-      signInAdmin
-    );
-
-
-  $("admin-password")
-    ?.addEventListener(
-      "keydown",
-      e=>{
-        if(e.key==="Enter"){
-          signInAdmin();
-        }
-      }
-    );
 
 
   $("admin-lock")
@@ -3517,6 +3501,7 @@ async function renderAdminMyArt(){
   const p=$("admin-myart-panel");
 
   if(!p)return;
+
 
   let items=[];
 
@@ -4652,8 +4637,7 @@ function bindAdminDelegates(){
             session?.user||null;
 
           adminUnlocked=
-            !!currentUser&&
-            isAdmin();
+            !!currentUser;
 
           updateAdminVisibility();
 
@@ -4685,13 +4669,3 @@ function bindAdminDelegates(){
   }
 
 })();
-alter table public.artwork
-  add column if not exists series_id uuid,
-  add column if not exists series_order integer,
-  add column if not exists image_title text;
-
-create index if not exists artwork_series_id_idx
-  on public.artwork(series_id);
-
-create index if not exists artwork_created_at_idx
-  on public.artwork(created_at desc);

@@ -1715,177 +1715,240 @@ function injectGalleryAdaptiveStyles(){
   if(document.getElementById("uu-gallery-performance-styles"))return;
 
   const style=document.createElement("style");
-
   style.id="uu-gallery-performance-styles";
 
   style.textContent=`
 
     /* =========================================
-       UU的小馆 · 真正按原图比例自适应的画廊
-       横图更宽 / 竖图更窄 / 正方形适中
-       不裁切，不强行统一宽度
+       UU的小馆 · 原图比例显示
+       不固定高度 / 不裁切 / 不拉伸
+       图片保持自己原来的长宽比例
        ========================================= */
 
-    .art-masonry-grid{
+    /* 画廊容器 */
+    .art-grid.art-masonry-grid{
       display:flex !important;
       flex-wrap:wrap !important;
       align-items:flex-start !important;
       justify-content:flex-start !important;
-      gap:24px !important;
+
       width:100% !important;
+      gap:24px !important;
     }
 
-    .art-masonry-grid .art-card{
-      display:flex !important;
-      flex-direction:column !important;
-      flex:0 0 auto !important;
-      width:max-content !important;
-      max-width:100% !important;
-      margin:0 !important;
-      break-inside:avoid !important;
-      page-break-inside:avoid !important;
-      overflow:hidden !important;
-    }
-
-    /* 图片根据原始比例自然适配：不裁切 */
-    .art-masonry-grid .art-card .art-image{
+    /* 单幅作品卡片 */
+    .art-grid.art-masonry-grid .art-card{
       display:block !important;
+
+      width:fit-content !important;
+      max-width:100% !important;
+
+      flex:0 0 auto !important;
+
+      margin:0 !important;
+      padding:0 !important;
+
+      overflow:visible !important;
+    }
+
+    /* -----------------------------------------
+       核心：
+       完全按照原图片的 intrinsic ratio 显示
+       ----------------------------------------- */
+    .art-grid.art-masonry-grid .art-card .art-image{
+      display:block !important;
+
       width:auto !important;
       height:auto !important;
+
+      /*
+         不再给图片规定固定高度。
+         只有图片太宽、放不进屏幕时才缩小。
+         缩小过程中长宽比例保持不变。
+      */
       max-width:100% !important;
-      max-height:320px !important;
+      max-height:none !important;
+
+      min-width:0 !important;
+      min-height:0 !important;
+
+      aspect-ratio:auto !important;
+
       object-fit:contain !important;
       object-position:center !important;
-      aspect-ratio:auto !important;
+
+      flex:none !important;
+
+      box-sizing:border-box !important;
     }
 
-    /* 图片下面的文字区域跟随图片宽度 */
-    .art-masonry-grid .art-card .art-info{
-      width:100% !important;
+    /* 图片下面的文字 */
+    .art-grid.art-masonry-grid .art-card .art-info{
+      width:fit-content !important;
       max-width:100% !important;
       box-sizing:border-box !important;
     }
 
-    .art-masonry-grid .art-card .art-title,
-    .art-masonry-grid .art-card .art-date,
-    .art-masonry-grid .art-card .art-note{
+    .art-grid.art-masonry-grid .art-card .art-title,
+    .art-grid.art-masonry-grid .art-card .art-date,
+    .art-grid.art-masonry-grid .art-card .art-note{
+      max-width:100% !important;
       overflow-wrap:anywhere !important;
     }
 
-    /* 组画整组占一行，组内每一张再按自己的原图比例排 */
-    .art-masonry-grid .series-card{
+    /* =========================================
+       组画
+       每张组画图片也保持自己的原图比例
+       ========================================= */
+
+    .art-grid.art-masonry-grid .series-card{
       width:100% !important;
       max-width:100% !important;
+
       flex:0 0 100% !important;
+
       margin:0 !important;
-      break-inside:avoid !important;
-      page-break-inside:avoid !important;
+      padding:0 !important;
+
+      overflow:visible !important;
     }
 
-    .series-grid{
+    .art-grid.art-masonry-grid .series-grid{
       display:flex !important;
       flex-wrap:wrap !important;
+
       align-items:flex-start !important;
       justify-content:flex-start !important;
-      gap:18px !important;
+
       width:100% !important;
+      gap:18px !important;
     }
 
-    .series-grid figure{
-      display:flex !important;
-      flex-direction:column !important;
-      flex:0 0 auto !important;
-      width:max-content !important;
-      max-width:100% !important;
-      margin:0 !important;
-    }
-
-    .series-grid figure .art-image{
+    .art-grid.art-masonry-grid .series-grid figure{
       display:block !important;
+
+      width:fit-content !important;
+      max-width:100% !important;
+
+      flex:0 0 auto !important;
+
+      margin:0 !important;
+      padding:0 !important;
+
+      overflow:visible !important;
+    }
+
+    .art-grid.art-masonry-grid .series-grid figure .art-image{
+      display:block !important;
+
       width:auto !important;
       height:auto !important;
+
       max-width:100% !important;
-      max-height:260px !important;
+      max-height:none !important;
+
+      min-width:0 !important;
+      min-height:0 !important;
+
+      aspect-ratio:auto !important;
+
       object-fit:contain !important;
       object-position:center !important;
-      aspect-ratio:auto !important;
+
+      flex:none !important;
+
+      box-sizing:border-box !important;
     }
 
-    .series-grid figcaption{
+    .art-grid.art-masonry-grid .series-grid figcaption{
       max-width:100% !important;
       overflow-wrap:anywhere !important;
     }
 
-    /* 电脑 */
-    @media(min-width:1100px){
-      .art-masonry-grid{
-        gap:26px !important;
-      }
+    /* =========================================
+       手机
+       两列只是排版方式；
+       每一张图片本身仍然完全保持原比例
+       ========================================= */
 
-      .art-masonry-grid .art-card .art-image{
-        max-height:320px !important;
-      }
-
-      .series-grid figure .art-image{
-        max-height:260px !important;
-      }
-    }
-
-    /* 平板 */
-    @media(max-width:900px){
-      .art-masonry-grid{
-        gap:20px !important;
-      }
-
-      .art-masonry-grid .art-card .art-image{
-        max-height:270px !important;
-      }
-
-      .series-grid{
-        gap:16px !important;
-      }
-
-      .series-grid figure .art-image{
-        max-height:230px !important;
-      }
-    }
-
-    /* 手机：一行尽量容纳多张，长图自动变窄 */
     @media(max-width:600px){
-      .art-masonry-grid{
-        gap:16px !important;
+
+      .art-grid.art-masonry-grid{
+        gap:14px !important;
       }
 
-      .art-masonry-grid .art-card{
-        max-width:calc(50% - 8px) !important;
+      .art-grid.art-masonry-grid .art-card{
+        max-width:calc(50% - 7px) !important;
       }
 
-      .art-masonry-grid .art-card .art-image{
-        max-height:210px !important;
+      .art-grid.art-masonry-grid .art-card .art-image{
+        width:auto !important;
+        height:auto !important;
+
+        max-width:100% !important;
+        max-height:none !important;
+
+        aspect-ratio:auto !important;
+        object-fit:contain !important;
       }
 
-      .art-masonry-grid .art-card .art-info{
-        padding-left:2px !important;
-        padding-right:2px !important;
+      .art-grid.art-masonry-grid .series-grid{
+        gap:10px !important;
       }
 
-      .series-grid{
+      .art-grid.art-masonry-grid .series-grid figure{
+        max-width:calc(50% - 5px) !important;
+      }
+
+      .art-grid.art-masonry-grid .series-grid figure .art-image{
+        width:auto !important;
+        height:auto !important;
+
+        max-width:100% !important;
+        max-height:none !important;
+
+        aspect-ratio:auto !important;
+        object-fit:contain !important;
+      }
+    }
+
+    /* =========================================
+       很窄的手机
+       图片如果本身太宽，就等比例缩小到屏幕内
+       ========================================= */
+
+    @media(max-width:380px){
+
+      .art-grid.art-masonry-grid{
         gap:12px !important;
       }
 
-      .series-grid figure .art-image{
-        max-height:180px !important;
-      }
-    }
-
-    /* 超窄手机：避免横向溢出 */
-    @media(max-width:380px){
-      .art-masonry-grid .art-card{
+      .art-grid.art-masonry-grid .art-card{
         max-width:100% !important;
       }
 
-      .art-masonry-grid .art-card .art-image{
-        max-height:240px !important;
+      .art-grid.art-masonry-grid .art-card .art-image{
+        width:auto !important;
+        height:auto !important;
+
+        max-width:100% !important;
+        max-height:none !important;
+      }
+
+      .art-grid.art-masonry-grid .series-grid{
+        gap:10px !important;
+      }
+
+      .art-grid.art-masonry-grid .series-grid figure{
+        max-width:100% !important;
+      }
+
+      .art-grid.art-masonry-grid .series-grid figure .art-image{
+        width:auto !important;
+        height:auto !important;
+
+        max-width:100% !important;
+        max-height:none !important;
       }
     }
 

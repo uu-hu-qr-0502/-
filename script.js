@@ -3748,7 +3748,7 @@ async function renderAdminMyArt(){
       await supabaseClient
         .from("artwork")
         .select(
-          "id,created_at,title,image_url,category,note,type,user_id"
+          "id,created_at,title,image_url,category,note,type,user_id,series_id,series_order"
         )
         .eq(
           "is_owner",
@@ -3776,8 +3776,13 @@ async function renderAdminMyArt(){
             category:x.category||"colored",
             date:
               (x.created_at||"")
-                .slice(0,10),
-            note:x.note||""
+                .slice(0,10)
+              ||
+              new Date().toISOString().slice(0,10),
+            note:x.note||"",
+            type:x.type||"single",
+            seriesId:x.series_id||null,
+            seriesOrder:Number(x.series_order)||0
           })
         );
 
@@ -3892,7 +3897,10 @@ async function renderAdminMyArt(){
           .map(
             x=>`
 
-              <article class="admin-own-item">
+              <article
+                class="admin-own-item"
+                data-own-art-card="${x.id}"
+              >
 
                 <img
                   src="${x.image}"
@@ -3901,11 +3909,28 @@ async function renderAdminMyArt(){
 
                 <div>
 
-                  <h4>
-                    ${escapeHtml(x.title)}
-                  </h4>
+                  <label>
+                    ${t("editName")}
+                  </label>
 
-                  <p>
+                  <input
+                    class="admin-own-title-input"
+                    data-own-title="${x.id}"
+                    value="${escapeHtml(x.title)}"
+                  >
+
+                  <label>
+                    ${t("editDate")}
+                  </label>
+
+                  <input
+                    class="admin-own-date-input"
+                    data-own-date="${x.id}"
+                    type="date"
+                    value="${x.date}"
+                  >
+
+                  <p class="admin-own-category">
                     ${
                       x.category==="colored"
                       ?
@@ -3913,8 +3938,6 @@ async function renderAdminMyArt(){
                       :
                       t("sketch")
                     }
-                    ·
-                    ${escapeHtml(x.date)}
                   </p>
 
                   ${
@@ -3925,12 +3948,25 @@ async function renderAdminMyArt(){
                     ""
                   }
 
-                  <button
-                    class="danger-button"
-                    data-own-delete="${x.id}"
-                  >
-                    ${t("adminDelete")}
-                  </button>
+                  <div class="admin-actions">
+
+                    <button
+                      type="button"
+                      class="admin-save-main"
+                      data-own-save="${x.id}"
+                    >
+                      ${t("adminSave")}
+                    </button>
+
+                    <button
+                      type="button"
+                      class="danger-button"
+                      data-own-delete="${x.id}"
+                    >
+                      ${t("adminDelete")}
+                    </button>
+
+                  </div>
 
                 </div>
 
@@ -3983,6 +4019,7 @@ async function renderAdminMyArt(){
       }
     );
 
+
   $("add-my-art")
     .addEventListener(
       "click",
@@ -4023,8 +4060,6 @@ async function renderAdminMyArt(){
               type:seriesId ? "series" : "single",
               series_id:seriesId,
               series_order:seriesId ? i : null,
-              // 直接把管理员选择的作品日期写入 created_at。
-              // 这样不用新增数据库字段，画廊也会按你选的日期排序。
               created_at:`${selectedDate}T12:00:0${i}.000Z`
             });
           }
@@ -4057,13 +4092,83 @@ async function renderAdminMyArt(){
       }
     );
 
+
   p.onclick=
     async e=>{
 
-      const b=
-        e.target.closest(
-          "[data-own-delete]"
-        );
+      const save=e.target.closest("[data-own-save]");
+
+      if(save){
+        const id=save.dataset.ownSave;
+        const card=p.querySelector(`[data-own-art-card="${id}"]`);
+        const titleInput=card?.querySelector(`[data-own-title="${id}"]`);
+        const dateInput=card?.querySelector(`[data-own-date="${id}"]`);
+
+        const title=(titleInput?.value||"").trim();
+        const date=dateInput?.value||"";
+
+        if(!title){
+          alert(
+            language==="zh"
+            ? "作品名字不能为空。"
+            : "Artwork title cannot be empty."
+          );
+          return;
+        }
+
+        if(!date){
+          alert(
+            language==="zh"
+            ? "请选择日期。"
+            : "Please choose a date."
+          );
+          return;
+        }
+
+        save.disabled=true;
+
+        try{
+          const {error}=
+            await supabaseClient
+              .from("artwork")
+              .update({
+                title,
+                created_at:`${date}T12:00:00.000Z`
+              })
+              .eq(
+                "id",
+                id
+              )
+              .eq(
+                "is_owner",
+                true
+              );
+
+          if(error)throw error;
+
+          await loadRemoteArtworks();
+          await renderAdminMyArt();
+
+          $("my-art-message").textContent=
+            language==="zh"
+            ? "已经保存好啦 ♡"
+            : "Saved ♡";
+
+        }catch(err){
+          console.error(err);
+          alert(
+            language==="zh"
+            ? `保存失败：${err?.message||"未知错误"}`
+            : `Save failed: ${err?.message||"Unknown error"}`
+          );
+        }finally{
+          save.disabled=false;
+        }
+
+        return;
+      }
+
+      const b=e.target.closest("[data-own-delete]");
 
       if(!b)return;
 
@@ -4082,7 +4187,6 @@ async function renderAdminMyArt(){
       }
 
       await loadRemoteArtworks();
-
       renderAdminMyArt();
 
     };

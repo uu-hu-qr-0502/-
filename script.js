@@ -3989,6 +3989,7 @@ async function renderAdminMyArt(){
       async()=>{
         const title=$("my-art-title").value.trim();
         const files=imageFiles(selectedMyArtImage);
+        const selectedDate=$("my-art-date")?.value || new Date().toISOString().slice(0,10);
 
         if(!files.length){
           $("my-art-message").textContent=t("adminNeedImage");
@@ -4021,7 +4022,10 @@ async function renderAdminMyArt(){
               user_id:currentUser.id,
               type:seriesId ? "series" : "single",
               series_id:seriesId,
-              series_order:seriesId ? i : null
+              series_order:seriesId ? i : null,
+              // 直接把管理员选择的作品日期写入 created_at。
+              // 这样不用新增数据库字段，画廊也会按你选的日期排序。
+              created_at:`${selectedDate}T12:00:0${i}.000Z`
             });
           }
 

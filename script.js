@@ -1165,8 +1165,7 @@ async function signInAdmin(){
     currentUser=data.user;
 
     // 登录成功就进入后台，不再检查 role=admin。
-
-       adminUnlocked=true;
+    adminUnlocked=true;
 
     setAdminMessage(
       "登录成功 ♡"
@@ -1199,6 +1198,7 @@ async function signInAdmin(){
 
   }
 }
+
 
 
 const defaultContent={
@@ -1714,49 +1714,190 @@ function renderAll(){
 
 function injectGalleryAdaptiveStyles(){
   if(document.getElementById("uu-gallery-performance-styles"))return;
+
   const style=document.createElement("style");
+
   style.id="uu-gallery-performance-styles";
+
   style.textContent=`
-    .art-image-auto-size{
-      display:block !important;
-      width:100% !important;
-      height:auto !important;
-      max-height:none !important;
-      aspect-ratio:auto !important;
-      object-fit:contain !important;
-    }
+
+    /* =========================================
+       UU的小馆 · 真正按原图比例自适应的画廊
+       横图更宽 / 竖图更窄 / 正方形适中
+       不裁切，不强行统一宽度
+       ========================================= */
+
     .art-masonry-grid{
-      column-count:3;
-      column-gap:22px;
+      display:flex !important;
+      flex-wrap:wrap !important;
+      align-items:flex-start !important;
+      justify-content:flex-start !important;
+      gap:24px !important;
+      width:100% !important;
+    }
+
+    .art-masonry-grid .art-card{
+      display:flex !important;
+      flex-direction:column !important;
+      flex:0 0 auto !important;
+      width:max-content !important;
+      max-width:100% !important;
+      margin:0 !important;
+      break-inside:avoid !important;
+      page-break-inside:avoid !important;
+      overflow:hidden !important;
+    }
+
+    /* 图片根据原始比例自然适配：不裁切 */
+    .art-masonry-grid .art-card .art-image{
       display:block !important;
+      width:auto !important;
+      height:auto !important;
+      max-width:100% !important;
+      max-height:320px !important;
+      object-fit:contain !important;
+      object-position:center !important;
+      aspect-ratio:auto !important;
     }
-    .art-masonry-grid .art-card,
+
+    /* 图片下面的文字区域跟随图片宽度 */
+    .art-masonry-grid .art-card .art-info{
+      width:100% !important;
+      max-width:100% !important;
+      box-sizing:border-box !important;
+    }
+
+    .art-masonry-grid .art-card .art-title,
+    .art-masonry-grid .art-card .art-date,
+    .art-masonry-grid .art-card .art-note{
+      overflow-wrap:anywhere !important;
+    }
+
+    /* 组画整组占一行，组内每一张再按自己的原图比例排 */
     .art-masonry-grid .series-card{
-      display:inline-block;
-      width:100%;
-      margin:0 0 22px;
-      break-inside:avoid;
-      page-break-inside:avoid;
-      vertical-align:top;
+      width:100% !important;
+      max-width:100% !important;
+      flex:0 0 100% !important;
+      margin:0 !important;
+      break-inside:avoid !important;
+      page-break-inside:avoid !important;
     }
+
     .series-grid{
-      align-items:start !important;
+      display:flex !important;
+      flex-wrap:wrap !important;
+      align-items:flex-start !important;
+      justify-content:flex-start !important;
+      gap:18px !important;
+      width:100% !important;
     }
+
     .series-grid figure{
-      margin:0;
+      display:flex !important;
+      flex-direction:column !important;
+      flex:0 0 auto !important;
+      width:max-content !important;
+      max-width:100% !important;
+      margin:0 !important;
     }
+
+    .series-grid figure .art-image{
+      display:block !important;
+      width:auto !important;
+      height:auto !important;
+      max-width:100% !important;
+      max-height:260px !important;
+      object-fit:contain !important;
+      object-position:center !important;
+      aspect-ratio:auto !important;
+    }
+
+    .series-grid figcaption{
+      max-width:100% !important;
+      overflow-wrap:anywhere !important;
+    }
+
+    /* 电脑 */
+    @media(min-width:1100px){
+      .art-masonry-grid{
+        gap:26px !important;
+      }
+
+      .art-masonry-grid .art-card .art-image{
+        max-height:320px !important;
+      }
+
+      .series-grid figure .art-image{
+        max-height:260px !important;
+      }
+    }
+
+    /* 平板 */
     @media(max-width:900px){
-      .art-masonry-grid{column-count:2;}
+      .art-masonry-grid{
+        gap:20px !important;
+      }
+
+      .art-masonry-grid .art-card .art-image{
+        max-height:270px !important;
+      }
+
+      .series-grid{
+        gap:16px !important;
+      }
+
+      .series-grid figure .art-image{
+        max-height:230px !important;
+      }
     }
+
+    /* 手机：一行尽量容纳多张，长图自动变窄 */
     @media(max-width:600px){
-      .art-masonry-grid{column-count:1;}
+      .art-masonry-grid{
+        gap:16px !important;
+      }
+
+      .art-masonry-grid .art-card{
+        max-width:calc(50% - 8px) !important;
+      }
+
+      .art-masonry-grid .art-card .art-image{
+        max-height:210px !important;
+      }
+
+      .art-masonry-grid .art-card .art-info{
+        padding-left:2px !important;
+        padding-right:2px !important;
+      }
+
+      .series-grid{
+        gap:12px !important;
+      }
+
+      .series-grid figure .art-image{
+        max-height:180px !important;
+      }
     }
+
+    /* 超窄手机：避免横向溢出 */
+    @media(max-width:380px){
+      .art-masonry-grid .art-card{
+        max-width:100% !important;
+      }
+
+      .art-masonry-grid .art-card .art-image{
+        max-height:240px !important;
+      }
+    }
+
     .batch-upload-count{
       margin:8px 0 0;
       font-size:.78rem;
       opacity:.72;
     }
+
   `;
+
   document.head.appendChild(style);
 }
 
@@ -2262,7 +2403,9 @@ async function initEvents(){
 
           if(error)throw error;
 
-          $("question-answer").value="";
+
+
+                   $("question-answer").value="";
 
           await loadRemoteInteractions();
 
@@ -2333,8 +2476,7 @@ async function initEvents(){
               language==="zh"
               ?
               "确定要删除这条答案吗？"
-
-                             :
+              :
               "Delete this answer?"
             )
           ){
@@ -3501,7 +3643,6 @@ async function renderAdminMyArt(){
   const p=$("admin-myart-panel");
 
   if(!p)return;
-
 
   let items=[];
 

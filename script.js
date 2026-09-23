@@ -1200,7 +1200,6 @@ async function signInAdmin(){
 }
 
 
-
 const defaultContent={
 
   heroTitle:{
@@ -2403,9 +2402,7 @@ async function initEvents(){
 
           if(error)throw error;
 
-
-
-                   $("question-answer").value="";
+          $("question-answer").value="";
 
           await loadRemoteInteractions();
 
